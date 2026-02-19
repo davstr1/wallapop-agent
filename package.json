@@ -1,0 +1,11 @@
+{
+  "name": "wallapop-agent",
+  "version": "0.1.0",
+  "description": "Wallapop agent API — search, browse, and contact sellers",
+  "type": "module",
+  "scripts": {
+    "dev": "node src/server.js",
+    "start": "node src/server.js"
+  },
+  "dependencies": {}
+}
