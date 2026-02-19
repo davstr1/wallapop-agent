@@ -23,10 +23,48 @@ const client = new WallapopClient();
 app.use(cors());
 app.use(express.json());
 
+// ── Token store (in-memory, agent can set/get) ──────────
+
+let storedToken: { token: string; extractedAt: number } | null = null;
+
 // ── Health ──────────────────────────────────────────────
 
 app.get('/health', (_req: Request, res: Response) => {
-  res.json({ status: 'ok', service: 'wallapop-agent' });
+  res.json({
+    status: 'ok',
+    service: 'wallapop-agent',
+    hasToken: !!storedToken,
+    tokenAge: storedToken ? Math.round((Date.now() - storedToken.extractedAt) / 1000) + 's' : null,
+  });
+});
+
+// ── Token management ────────────────────────────────────
+
+// GET /api/token — get stored token info (not the token itself for security)
+app.get('/api/token', (_req: Request, res: Response) => {
+  if (!storedToken) {
+    res.json({ hasToken: false, instructions: 'POST /api/token with { token } or use browser to extract' });
+    return;
+  }
+  res.json({
+    hasToken: true,
+    extractedAt: new Date(storedToken.extractedAt).toISOString(),
+    ageSeconds: Math.round((Date.now() - storedToken.extractedAt) / 1000),
+    tokenPreview: storedToken.token.substring(0, 20) + '...',
+  });
+});
+
+// POST /api/token — store a token (agent sets this after browser extraction)
+app.post('/api/token', (req: Request, res: Response) => {
+  const { token } = req.body as { token?: string };
+  if (!token) { res.status(400).json({ error: 'token required' }); return; }
+  storedToken = { token, extractedAt: Date.now() };
+  res.json({ ok: true, tokenPreview: token.substring(0, 20) + '...' });
+});
+
+// GET /api/token/extract-js — returns the JS to evaluate in browser
+app.get('/api/token/extract-js', (_req: Request, res: Response) => {
+  res.json({ js: WallapopClient.TOKEN_EXTRACT_JS });
 });
 
 // ── Search ──────────────────────────────────────────────
@@ -124,11 +162,11 @@ app.get('/api/categories', async (_req: Request, res: Response, next: NextFuncti
 app.get('/api/inbox', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const auth = req.headers.authorization;
-    if (!auth?.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'Bearer token required in Authorization header' });
+    const token = auth?.startsWith('Bearer ') ? auth.slice(7) : storedToken?.token;
+    if (!token) {
+      res.status(401).json({ error: 'No token. Pass Authorization: Bearer header or POST /api/token first.' });
       return;
     }
-    const token = auth.slice(7);
     const data = await client.getInbox(token, {
       pageSize: qn(req.query.pageSize),
       maxMessages: qn(req.query.maxMessages),
@@ -145,11 +183,12 @@ app.get('/api/inbox', async (req: Request, res: Response, next: NextFunction) =>
 app.get('/api/conversations/:id/messages', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const auth = req.headers.authorization;
-    if (!auth?.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'Bearer token required in Authorization header' });
+    const token = auth?.startsWith('Bearer ') ? auth.slice(7) : storedToken?.token;
+    if (!token) {
+      res.status(401).json({ error: 'No token. Pass Authorization: Bearer header or POST /api/token first.' });
       return;
     }
-    const data = await client.getConversation(auth.slice(7), String(req.params.id));
+    const data = await client.getConversation(token, String(req.params.id));
     res.json(data);
   } catch (err) {
     next(err);

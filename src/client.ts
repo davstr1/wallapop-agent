@@ -172,6 +172,22 @@ export class WallapopClient {
     return res.json();
   }
 
+  // ── Token extraction (browser cookie) ────────────────
+
+  /**
+   * JavaScript to evaluate in browser to extract the Bearer token.
+   * Run this on any authenticated Wallapop page.
+   * Returns the token string or null.
+   */
+  static TOKEN_EXTRACT_JS = `
+    (() => {
+      const match = document.cookie.split(';')
+        .map(c => c.trim())
+        .find(c => c.startsWith('accessToken='));
+      return match ? match.slice('accessToken='.length) : null;
+    })()
+  `.trim();
+
   // ── Helpers ─────────────────────────────────────────
 
   chatUrl(itemHash: string): string {
