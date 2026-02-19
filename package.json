@@ -4,8 +4,20 @@
   "description": "Wallapop agent API — search, browse, and contact sellers",
   "type": "module",
   "scripts": {
-    "dev": "node src/server.js",
-    "start": "node src/server.js"
+    "build": "tsc",
+    "dev": "tsx watch src/server.ts",
+    "start": "node dist/server.js"
   },
-  "dependencies": {}
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "https-proxy-agent": "^7.0.6"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
 }
