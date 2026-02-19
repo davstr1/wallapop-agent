@@ -133,6 +133,35 @@ export interface ChatInstructions {
   steps: ChatStep[];
 }
 
+// ── Inbox ───────────────────────────────────────────────
+
+export interface InboxConversation {
+  id: string;
+  with_user: {
+    id: string;
+    name: string;
+    image_url?: string;
+  };
+  item: {
+    id: string;
+    title: string;
+    price: number;
+    image_url?: string;
+  };
+  last_message: {
+    text: string;
+    timestamp: string;
+    from_self: boolean;
+  };
+  unread_count: number;
+  status?: string;
+}
+
+export interface InboxResponse {
+  conversations?: InboxConversation[];
+  [key: string]: unknown; // Wallapop may return additional fields
+}
+
 // ── Config ──────────────────────────────────────────────
 
 export interface ClientConfig {

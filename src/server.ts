@@ -118,6 +118,44 @@ app.get('/api/categories', async (_req: Request, res: Response, next: NextFuncti
   }
 });
 
+// ── Inbox (auth required) ───────────────────────────────
+// GET /api/inbox  (Bearer token in Authorization header)
+
+app.get('/api/inbox', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Bearer token required in Authorization header' });
+      return;
+    }
+    const token = auth.slice(7);
+    const data = await client.getInbox(token, {
+      pageSize: qn(req.query.pageSize),
+      maxMessages: qn(req.query.maxMessages),
+    });
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── Conversation messages (auth required) ───────────────
+// GET /api/conversations/:id/messages
+
+app.get('/api/conversations/:id/messages', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const auth = req.headers.authorization;
+    if (!auth?.startsWith('Bearer ')) {
+      res.status(401).json({ error: 'Bearer token required in Authorization header' });
+      return;
+    }
+    const data = await client.getConversation(auth.slice(7), String(req.params.id));
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ── Chat Instructions ───────────────────────────────────
 
 app.post('/api/chat', async (req: Request, res: Response, next: NextFunction) => {

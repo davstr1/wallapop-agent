@@ -8,6 +8,7 @@ import type {
   RawSearchItem,
   RawItemDetails,
   ItemDetails,
+  InboxResponse,
 } from './types.js';
 
 const WALLAPOP_API = 'https://api.wallapop.com/api/v3';
@@ -135,6 +136,40 @@ export class WallapopClient {
     const hash: string | undefined = nextData?.props?.pageProps?.item?.id;
     if (!hash) throw new Error('Could not extract item hash from page data');
     return hash;
+  }
+
+  // ── Inbox (auth required) ────────────────────────────
+
+  async getInbox(bearerToken: string, opts: { pageSize?: number; maxMessages?: number } = {}): Promise<InboxResponse> {
+    const url = new URL('https://api.wallapop.com/bff/messaging/inbox');
+    url.searchParams.set('page_size', String(opts.pageSize ?? 100));
+    url.searchParams.set('max_messages', String(opts.maxMessages ?? 1));
+
+    const res = await fetch(url.toString(), {
+      headers: {
+        Accept: 'application/json, text/plain, */*',
+        Authorization: `Bearer ${bearerToken}`,
+        Referer: 'https://es.wallapop.com/',
+        'Accept-Language': 'es,en-GB;q=0.9,en-US;q=0.8,en;q=0.7',
+      },
+    });
+    if (!res.ok) throw new Error(`Inbox ${res.status}: ${await res.text()}`);
+    return res.json() as Promise<InboxResponse>;
+  }
+
+  // ── Conversation messages (auth required) ───────────
+
+  async getConversation(bearerToken: string, conversationId: string): Promise<unknown> {
+    const url = `https://api.wallapop.com/bff/messaging/conversations/${conversationId}/messages`;
+    const res = await fetch(url, {
+      headers: {
+        Accept: 'application/json, text/plain, */*',
+        Authorization: `Bearer ${bearerToken}`,
+        Referer: 'https://es.wallapop.com/',
+      },
+    });
+    if (!res.ok) throw new Error(`Conversation ${res.status}: ${await res.text()}`);
+    return res.json();
   }
 
   // ── Helpers ─────────────────────────────────────────
