@@ -32,7 +32,7 @@ export class WallapopClient {
   }
 
   private async get<T>(path: string, params: Record<string, string | number> = {}): Promise<T> {
-    const url = new URL(path, WALLAPOP_API);
+    const url = new URL(`${WALLAPOP_API}${path}`);
     for (const [k, v] of Object.entries(params)) {
       if (v != null) url.searchParams.set(k, String(v));
     }
